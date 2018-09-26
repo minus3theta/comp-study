@@ -1,0 +1,604 @@
+\documentclass[dvipdfmx]{beamer}
+\usetheme{metropolis}
+\setbeamertemplate{navigation symbols}{}
+\usepackage{fancyvrb}
+\usepackage{xcolor}
+\usepackage{ulem}
+\usepackage{pxjahyper}
+\usepackage[deluxe, uplatex]{otf}
+\usepackage{algorithm}
+\usepackage[noend]{algorithmic}
+\hypersetup{
+  pdftitle={全探索と計算量},
+  pdfauthor={Jun Yoneyama}
+}
+\hypersetup{
+  colorlinks, linkcolor=blue, urlcolor=blue
+}
+\usefonttheme{professionalfonts}
+\AtBeginSection[]{}
+\renewcommand{\kanjifamilydefault}{\gtdefault}
+
+\title{全探索と計算量}
+\author{Jun Yoneyama}
+\date{\today}
+
+\begin{document}
+
+\frame{\maketitle}
+
+\section{競技プログラミングとは}
+
+\begin{frame}{競技プログラミングとは}
+  アルゴリズム的な問題を短時間で解くコンテスト
+  \begin{block}{コンテストの流れ}
+    \begin{enumerate}
+      \item 問題が出される (入出力が規定された、プログラムの仕様のようなもの)
+      \item 仕様を満たすようにプログラムを書く
+      \item ソースコードを提出する
+      \item サーバーで自動テストが走る
+      \item 仕様を満たしていれば正解、得点が得られる
+    \end{enumerate}
+    提出の早さと正確さを競う
+  \end{block}
+\end{frame}
+
+\section{Overview}
+
+\begin{frame}{Overview}
+  \begin{block}{Target}
+    \begin{itemize}
+      \item AtCoder 200点～の問題に取り組んでいる人
+      \item 全探索とは何か分からない人
+      \item 全探索は分かるがTLEする人
+    \end{itemize}
+  \end{block}
+  \begin{block}{Outline}
+    \begin{itemize}
+      \item 全探索とは何か
+      \item 計算量の見積もり
+      \item 全探索高速化
+      \begin{itemize}
+        \item 探索範囲を絞る
+        \item 1回の探索を高速化する
+      \end{itemize}
+      \item 練習問題
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+\section{全探索とは何か}
+
+\subsection{概要}
+
+\begin{frame}{全探索とは何か}
+  \begin{block}{全探索とは}
+    \begin{itemize}
+      \item 解の候補を全て試す解法
+      \item 200点あたりから登場
+      \item 高難度問題でも他の解法と組み合わせてよく使う
+      \item とても重要
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+\subsection{問題例: ABC 098 B Cut and Count}
+
+\begin{frame}{問題例: ABC 098 B Cut and Count (200点)}
+  \begin{block}{問題 (\href{https://beta.atcoder.jp/contests/abc098/tasks/abc098_b}{リンク})}
+    \begin{itemize}
+      \item 英小文字からなる長さ$N$の文字列$S$が与えられます。
+      この文字列を一箇所で切断して、文字列$X$と$Y$に分割します。
+      このとき、「$X$と$Y$のどちらにも含まれている文字」の種類数を最大化したいです。
+      文字列を切断する位置を適切に決めた際の「$X$と$Y$のどちらにも含まれている文字」の種類数の最大値を求めてください。
+    \end{itemize}
+  \end{block}
+  \begin{block}{制約}
+    \begin{itemize}
+      \item $2 \le N \le 100$
+      \item $|S|=N$
+      \item $S$は英小文字からなる
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+\begin{frame}{問題例: ABC 098 B Cut and Count (200点)}
+  \begin{block}{例}
+    $S =$ \Verb|aabbca|
+    \pause
+
+    \Verb|aab| + \Verb|bca| と分けると\Verb|a|, \Verb|b|の2文字が両方に含まれて最適
+    \pause
+
+    \textcolor{blue}{Q.} 分割位置をどうやって求めるか？
+    \pause
+
+    \textcolor{red}{A.} 可能な分割を全部試す (「分割位置を全探索」と表現する)
+    \begin{itemize}
+      \item \Verb|a| + \Verb|abbca| \hspace{2em} $\Rightarrow 1$
+      \item \Verb|aa| + \Verb|bbca| \hspace{2em} $\Rightarrow 1$
+      \item \Verb|aab| + \Verb|bca| \hspace{2em} $\Rightarrow \textcolor{red}{2}$
+      \item \Verb|aabb| + \Verb|ca| \hspace{2em} $\Rightarrow 1$
+      \item \Verb|aabbc| + \Verb|a| \hspace{2em} $\Rightarrow 1$
+    \end{itemize}
+  \end{block}
+  分割後のカウントはバケット法など
+  (参考: \href{https://qiita.com/drken/items/fd4e5e3630d0f5859067\#\%E7\%AC\%AC-7-\%E5\%95\%8F--abc-085-b---kagami-mochi-200-\%E7\%82\%B9}{Kagami Mochi 解説})
+\end{frame}
+
+\subsection{全探索とは}
+
+\begin{frame}{全探索とは何か}
+  \begin{block}{}
+    \centering
+    {\Huge 解の候補を全て試す}
+  \end{block}
+  \begin{block}{}
+    全て試すことで、
+    \begin{itemize}
+      \item 何らかの値の最小値/最大値を求める
+      \item 条件を満たすものが存在するか判定する
+      \item 条件を満たすものの個数を数える
+    \end{itemize}
+    などなど
+  \end{block}
+\end{frame}
+
+\subsection{全探索の限界}
+
+\begin{frame}{全探索最強説}
+  \centering
+  \only<1>{「どんな問題でも、全部試せば解けるのでは…？」}
+  \only<2->{\sout{「どんな問題でも、全部試せば解けるのでは…？」}}
+
+  \uncover<2->{
+    \begin{figure}
+      \centering
+      \includegraphics[scale=1.5, angle=8]{res/TLE.png}
+    \end{figure}
+  }
+\end{frame}
+
+\section{計算量の見積もり}
+
+\subsection{TLEとは}
+
+\begin{frame}{TLE (Time Limit Exceeded) とは}
+  \begin{block}{実行制限時間}
+    \begin{itemize}
+      \item AtCoder (そして、おそらく全てのオンラインジャッジ)には実行時間制限が存在する
+      \item AtCoderの場合は大抵2秒
+    \end{itemize}
+  \end{block}
+  \begin{block}{TLE}
+    プログラムの実行時間が制限を超えると ``Time Limit Exceeded'' (TLE) 判定で
+    不正解となる
+  \end{block}
+\end{frame}
+
+\subsection{実行時間と問題へのアプローチ}
+
+\begin{frame}{実行時間と問題へのアプローチ}
+  \begin{block}{実行時間を考えない人のアプローチ}
+  \pause
+    \begin{enumerate}
+      \item 解法を考察する \pause
+      \item 実装する \pause
+      \item 提出する \pause
+      \item TLEが帰ってくる \pause
+      \item 解法を考察する \pause
+      \item 実装する \pause
+      \item $\vdots$ (以下無限ループ)
+    \end{enumerate}
+  \end{block}
+\end{frame}
+
+\begin{frame}{実行時間と問題へのアプローチ}
+  \begin{block}{実行時間を考える人のアプローチ}
+    \begin{enumerate}
+      \item 解法を考察する
+      \item 実装する
+      \textcolor{red}{前に間に合うか考える}
+      \item 実装する
+      \item 提出する
+    \end{enumerate}
+  \end{block}
+\end{frame}
+
+\subsection{実行時間の目安}
+
+\begin{frame}{実行時間の見積もり}
+  簡単に見積もる方法がある
+  \pause
+
+  \begin{block}{実行時間の目安}
+    \centering
+    {\Huge 1秒間に実行できるループの回数は $10^8$ 回程度}
+
+    (2018年現在、言語・処理内容によって左右されます)
+  \end{block}
+\end{frame}
+
+\subsection{ランダウの記号}
+
+\begin{frame}{実行時間の見積もり}
+  \begin{block}{ランダウの記号}
+    $f(x)$ が大まかに $g(x)$ に比例する、またはそれ以下であることを
+    \begin{align*}
+      f(x) = \mathrm{O}(g(x))
+    \end{align*}
+    と書く。 定数倍や小さい項は無視する
+
+    詳細は \href{https://ja.wikipedia.org/wiki/\%E3\%83\%A9\%E3\%83\%B3\%E3\%83\%80\%E3\%82\%A6\%E3\%81\%AE\%E8\%A8\%98\%E5\%8F\%B7}{ランダウの記号 - Wikipedia}
+    などを参照
+  \end{block}
+
+  \begin{block}{例}
+    \begin{align*}
+      2 x^2 + x + 3 &= \mathrm{O}(x^2) \\
+      3xy^2 + x &= \mathrm{O}(xy^2)
+    \end{align*}
+  \end{block}
+\end{frame}
+
+\begin{frame}{実行時間の見積もり}
+  \begin{block}{性質}
+    \begin{itemize}
+      \item $\mathrm{O}(f(x))$ の処理を $\mathrm{O}(g(x))$ 回行ったら全体の計算量は $\mathrm{O}(f(x))\mathrm{O}(g(x)) = \mathrm{O}(f(x)g(x))$
+      \item $\mathrm{O}(f(x))$ の処理の後に $\mathrm{O}(g(x))$ の処理を行ったら全体の計算量は $\mathrm{O}(f(x)) + \mathrm{O}(g(x)) = \mathrm{O}(\max(f(x),g(x)))$
+      \begin{itemize}
+        \item 例1: $\mathrm{O}(x^2) + \mathrm{O}(x) = \mathrm{O}(x^2)$ (大きい方だけ書く)
+        \item 例2: $\mathrm{O}(x) + \mathrm{O}(y)$ のような多変数の場合はどちらが大きいか決まらないのでそのまま $\mathrm{O}(x + y)$ と書くことが多い
+      \end{itemize}
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+\begin{frame}{実行時間の見積もり}
+  \begin{block}{実際の見積もり手順}
+    \begin{itemize}
+      \item 制約を読む (例: $1 \le n \le 10^5$)
+      \item アルゴリズムを考える
+      \item アルゴリズムの計算量を評価する (例: $\mathrm{O}(n\log n)$)
+      \item 制約を代入する (例: $n \log n \mid_{n=10^5} \fallingdotseq 10^5 \cdot 16.6 \fallingdotseq 1.7 \times 10^6$)
+      \item 値を $10^8$ と比較する (例: $1.7 \times 10^6 < 10^8$ なので間に合う)
+    \end{itemize}
+  \end{block}
+
+  (慣れたら「$n=10^5$ なら $\mathrm{O}(n\log n)$ は間に合うけど $\mathrm{O}(n^2)$ はTLE」など何となく判断できるようになる)
+
+  参考資料: {\small \href{https://qiita.com/drken/items/872ebc3a2b5caaa4a0d0}{計算量オーダーの求め方を総整理！}}
+\end{frame}
+
+\subsection{問題例: ABC 085 C Otoshidama}
+
+\begin{frame}{問題例: ABC 085 C Otoshidama (300点)}
+  \begin{block}{問題 (\href{https://beta.atcoder.jp/contests/abc085/tasks/abc085_c}{リンク})}
+    \begin{itemize}
+      \item 10000円札、5000円札、1000円札が合計 $N$ 枚、 $Y$ 円となる組み合わせがあれば出力せよ
+    \end{itemize}
+  \end{block}
+  \begin{block}{制約}
+    \begin{itemize}
+      \item $1 \le N \le 2000$
+      \item $1000 \le Y \le 2 \times 10^7$
+      \item $Y$ は $1000$ の倍数
+    \end{itemize}
+  \end{block}
+  以下、10000円札、5000円札、1000円札の枚数をそれぞれ$a,b,c$とする
+\end{frame}
+
+\begin{frame}{問題例: ABC 085 C Otoshidama (300点)}
+  \begin{block}{アルゴリズム1}
+    $a,b,c$を$0 \le a,b,c \le N$の範囲で全探索する
+    \begin{algorithmic}
+      \FOR{$a = 0$ to $N$}
+      \FOR{$b = 0$ to $N$}
+      \FOR{$c = 0$ to $N$}
+      \IF{$a + b + c = N \wedge 10000a + 5000b + 1000c = Y$}
+      \RETURN $(a, b, c)$
+      \ENDIF
+      \ENDFOR
+      \ENDFOR
+      \ENDFOR
+      \RETURN $(-1, -1, -1)$
+    \end{algorithmic}
+  \end{block}
+\end{frame}
+
+\begin{frame}{問題例: ABC 085 C Otoshidama (300点)}
+  \begin{block}{アルゴリズム1: 計算量}
+    \begin{itemize}
+      \item $a$ のループ: $\mathrm{O}(N)$ 回
+      \item $b$ のループ: $\mathrm{O}(N)$ 回
+      \item $c$ のループ: $\mathrm{O}(N)$ 回
+      \item $c$ のループ内の処理: $\mathrm{O}(1)$ 時間
+    \end{itemize}
+    全体で $\mathrm{O}(N) \cdot \mathrm{O}(N) \cdot \mathrm{O}(N) \cdot \mathrm{O}(1) = \mathrm{O}(N^3)$ 時間
+
+    $N=2000$ を代入すると $N^3 \mid_{N=2000} = 8 \times 10^9$ で間に合わない
+  \end{block}
+\end{frame}
+
+\begin{frame}{問題例: ABC 085 C Otoshidama (300点)}
+  \begin{block}{高速化}
+    $a + b + c = N$ とならない組み合わせは絶対に解にならないので除外する
+    $\to$ $a, b$ を決めると自動的に $c$ が決まる
+  \end{block}
+  \begin{block}{アルゴリズム2}
+    $a,b$ を $0 \le a,b \le N$ の範囲で全探索し、 $c = N - a - b$ とする
+    \begin{algorithmic}
+      \FOR{$a = 0$ to $N$}
+      \FOR{$b = 0$ to $N$}
+      \STATE $c \leftarrow N - a - b$
+      \IF{$0 \le c \le N \wedge 10000a + 5000b + 1000c = Y$}
+      \RETURN $(a, b, c)$
+      \ENDIF
+      \ENDFOR
+      \ENDFOR
+      \RETURN $(-1, -1, -1)$
+    \end{algorithmic}
+  \end{block}
+\end{frame}
+
+\begin{frame}{問題例: ABC 085 C Otoshidama (300点)}
+  \begin{block}{アルゴリズム2: 計算量}
+    \begin{itemize}
+      \item $a$ のループ: $\mathrm{O}(N)$ 回
+      \item $b$ のループ: $\mathrm{O}(N)$ 回
+      \item $b$ のループ内の処理: $\mathrm{O}(1)$ 時間
+    \end{itemize}
+    全体で $\mathrm{O}(N) \cdot \mathrm{O}(N) \cdot \mathrm{O}(1) = \mathrm{O}(N^2)$ 時間
+
+    $N=2000$ を代入すると $N^2 \mid_{N=2000} = 4 \times 10^6$ で間に合う
+
+    時間内に計算できることが分かったので、ここから実装を始める
+  \end{block}
+\end{frame}
+
+\section{全探索高速化}
+
+\subsection{概要}
+
+\begin{frame}{全探索高速化}
+  大雑把に言えば、
+
+  {\Large
+  \begin{align*}
+    & \text{全探索の計算量} \\
+    =& \text{探索対象の個数} \times \text{1回の探索にかかる計算量}
+  \end{align*}
+  }
+
+  すなわち、全探索でTLEすることが分かったら
+  \begin{itemize}
+    \item 探索対象の個数を減らす (例: Otoshidama)
+    \item 1回の探索にかかる計算量を減らす
+    \item (全探索以外の解法を考える)
+  \end{itemize}
+\end{frame}
+
+\subsection{問題例: ABC 098 C Attention}
+
+\begin{frame}{問題例: ABC 098 C Attention (300点)}
+  \begin{block}{問題 (\href{https://beta.atcoder.jp/contests/abc098/tasks/arc098_a}{リンク})}
+    $N$人の人が東西方向に一列に並んでいます。それぞれの人は、東または西を向いています。
+
+    あなたは、$N$人のうち誰か$1$人をリーダーとして任命します。
+    そして、リーダー以外の全員に、リーダーの方向を向くように命令します。
+    このとき、リーダーはどちらの方向を向いていても構いません。
+
+    向く方向を変える人数が最小になるようにリーダーを選びたいです。
+    向く方向を変える人数の最小値を求めてください。
+  \end{block}
+  \begin{block}{制約}
+    \begin{itemize}
+      \item $2 \le N \le 3 \times 10^5$
+      \item $|S| = N$ 、 $S_i$ は \texttt{'E'}または\texttt{'W'}
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+\begin{frame}{問題例: ABC 098 C Attention (300点)}
+  以下、 $N$ 人に西から $0, 1, \ldots, N-1$ と番号を振っておく
+  \begin{block}{方針}
+    \begin{itemize}
+      \item 誰をリーダーにすれば良いか簡単には分からなそう
+      \item リーダーの選び方を全探索する
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+\begin{frame}{問題例: ABC 098 C Attention (300点)}
+  \begin{block}{アルゴリズム1}
+    リーダーを $leader \in [0, N)$ として、その時の方向を変える人数を数えて最小値を取る
+    \begin{algorithmic}
+      \STATE $minChange \leftarrow \infty$
+      \FOR{$leader = 0$ to $N - 1$}
+      \STATE $change \leftarrow 0$
+      \FOR{$i = 0$ to $leader - 1$}
+      \IF{$S_i = \text{\Verb|'W'|}$}
+      \STATE $change \leftarrow change + 1$
+      \ENDIF
+      \ENDFOR
+      \FOR{$i = leader + 1$ to $N - 1$}
+      \IF{$S_i = \text{\Verb|'E'|}$}
+      \STATE $change \leftarrow change + 1$
+      \ENDIF
+      \ENDFOR
+      \STATE $minChange = \min(minChange, change)$
+      \ENDFOR
+      \RETURN $minChange$
+    \end{algorithmic}
+  \end{block}
+\end{frame}
+
+\begin{frame}{問題例: ABC 098 C Attention (300点)}
+  \begin{block}{アルゴリズム1: 計算量}
+    \begin{itemize}
+      \item リーダーの候補: $\mathrm{O}(N)$ 人
+      \item 方向を数える処理1回あたりの計算量: $\mathrm{O}(N)$
+    \end{itemize}
+    全体で $\mathrm{O}(N) \cdot \mathrm{O}(N) = \mathrm{O}(N^2)$ 時間
+
+    $N=10^5$ を代入すると $N^2 \mid_{N=10^5} = 10^{10}$ で間に合わない
+  \end{block}
+\end{frame}
+
+\begin{frame}{問題例: ABC 098 C Attention (300点)}
+  \begin{block}{高速化}
+    \begin{align*}
+      \text{全探索の計算量} = \text{探索対象の個数} \times \text{1回の探索にかかる計算量}
+    \end{align*}
+    \begin{itemize}
+      \item 探索対象の個数を減らす $\to$ 絶対にリーダーにする必要のない人を除外
+      \begin{itemize}
+        \item 難しそう
+        \item 仮に半分に絞ったとしても計算量は依然 $\mathrm{O}(N^2)$
+      \end{itemize}
+      \item 1回の探索にかかる計算量を減らす $\to$ 方向を変える人数を高速に計算する
+      \begin{itemize}
+        \item これを考えてみる
+      \end{itemize}
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+\begin{frame}{問題例: ABC 098 C Attention (300点)}
+  \begin{block}{方向を変える人数を高速に計算する}
+    $k$ 番目の人をリーダーとしたとき、方向を変える人数は
+    \begin{align*}
+      [0, k) \text{の範囲で西向きの人数} + [k+1, N) \text{の範囲で東向きの人数}
+    \end{align*}
+    ここで、 $W_k = [0, k) \text{の範囲で西向きの人数}$ とおくと
+    \begin{align*}
+      W_0 &= 0 \\
+      W_{k+1} &= W_{k} +
+      \begin{cases}
+        1 & \text{if } S_{k} = \text{\texttt{'W'}} \\
+        0 & \text{otherwise}
+      \end{cases}
+    \end{align*}
+    $W_0, W_1, \ldots, W_N$ の順で計算すると全体で $\mathrm{O}(N)$ で計算できる
+
+    このように、全探索の前に値を計算しておくことを前計算と呼ぶ
+  \end{block}
+\end{frame}
+
+\begin{frame}{問題例: ABC 098 C Attention (300点)}
+  \begin{block}{方向を変える人数を高速に計算する}
+    更に、
+    \begin{align*}
+      & [k, N) \text{の範囲で東向きの人数} \\
+      =& [0, N) \text{の範囲で東向きの人数} - [0, k) \text{の範囲で東向きの人数} \\
+      =& \left(N - W_N\right) - \left(k - W_k\right)
+    \end{align*}
+    と求めることができる
+
+    (西向きの場合と同様に東端から前計算しても良い。好みの問題)
+  \end{block}
+\end{frame}
+
+\begin{frame}{問題例: ABC 098 C Attention (300点)}
+  \begin{block}{アルゴリズム2}
+    \begin{algorithmic}
+      \STATE $W_0 \leftarrow 0$
+      \FOR{$i = 0$ to $N-1$}
+      \IF{$S_{i} =$ \texttt{'W'}}
+      \STATE $W_{i+1} \leftarrow W_{i} + 1$
+      \ELSE
+      \STATE $W_{i+1} \leftarrow W_{i}$
+      \ENDIF
+      \ENDFOR
+      \STATE $minChange \leftarrow \infty$
+      \FOR{$leader = 0$ to $N-1$}
+      \STATE $change \leftarrow W_{leader} + (N - W_N) - (leader + 1 - W_{leader + 1})$
+      \STATE $minChange = \min(minChange, change)$
+      \ENDFOR
+      \RETURN $minChange$
+    \end{algorithmic}
+  \end{block}
+\end{frame}
+
+\begin{frame}{問題例: ABC 098 C Attention (300点)}
+  \begin{block}{アルゴリズム2: 計算量}
+    \begin{itemize}
+      \item 前計算 $\mathrm{O}(N)$
+      \item 全探索 $\mathrm{O}(N) \cdot \mathrm{O}(1) = \mathrm{O}(N)$
+    \end{itemize}
+    全体で $\mathrm{O}(N) + \mathrm{O}(N) = \mathrm{O}(N)$ 時間
+
+    $N=10^5$ を代入すると $N \mid_{N=10^5} = 10^{5}$ で間に合う
+  \end{block}
+\end{frame}
+
+\section{まとめ}
+
+\begin{frame}{まとめ}
+  \begin{itemize}
+    \item 全探索: 解の候補を全て試す解法
+    \item 計算量に気を付ける
+    \begin{itemize}
+      \item 実装前に計算量を見積もる
+      \item 1秒間に実行できるループの回数は $10^8$ 回程度
+      \item ランダウの記号を使って大まかに評価すればよい
+    \end{itemize}
+    \item 高速化
+    \begin{itemize}
+      \item $\text{全探索の計算量} = \text{探索対象の個数} \times \text{1回の探索にかかる計算量}$
+      \item どちらかを削減する(解の絞り込み、前計算、etc.)
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\section{練習問題}
+
+\begin{frame}{練習問題}
+  注: この資料で説明した知識だけで解けるとは限りません
+  \begin{itemize}
+    \item \href{https://beta.atcoder.jp/contests/abc090/tasks/abc090_b}{ABC 090 B Palindromic Numbers (200点)}
+    \item \href{https://beta.atcoder.jp/contests/abc097/tasks/arc097_a}{ABC 097 C K-th Substring (300点)}
+    \item \href{https://beta.atcoder.jp/contests/abc107/tasks/arc101_a}{ABC 107 C Candles (300点)}
+    \item \href{https://beta.atcoder.jp/contests/abc104/tasks/abc104_c}{ABC 104 C All Green (300点)}
+    \item \href{https://beta.atcoder.jp/contests/mujin-pc-2018/tasks/mujin_pc_2018_c}{Mujin Programming Challenge 2018 C 右折 (400点)}
+    \item \href{https://beta.atcoder.jp/contests/arc096/tasks/arc096_b}{ARC 096 D Static Sushi (500点)}
+    \item \href{https://beta.atcoder.jp/contests/arc100/tasks/arc100_b}{ARC 100 D Equal Cut (600点)}
+    \begin{itemize}
+      \item 高速化に少し知識が必要
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{問題例: くじびき (蟻本 1章より)}
+  \begin{block}{問題}
+    数字が書かれた $n$ 枚の紙切れが袋に入っている。
+    「袋から紙切れを取り出し、数字を見て袋に戻す」ことを4回行い、4回の紙切れの数字の和が $m$ になることはありうるか？
+
+    紙切れに書かれた数字を $k_1, k_2, \ldots, k_n$ とする。
+  \end{block}
+  \begin{block}{制約}
+    \begin{itemize}
+      \item $1 \le n \le 50$
+      \item $1 \le m \le 10^8$
+      \item $1 \le k_i \le 10^8$
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+\begin{frame}{問題例: ハードルの上がったくじびき (蟻本 1章より)}
+  \begin{block}{問題}
+    数字が書かれた $n$ 枚の紙切れが袋に入っている。
+    「袋から紙切れを取り出し、数字を見て袋に戻す」ことを4回行い、4回の紙切れの数字の和が $m$ になることはありうるか？
+
+    紙切れに書かれた数字を $k_1, k_2, \ldots, k_n$ とする。
+  \end{block}
+  \begin{block}{制約}
+    \begin{itemize}
+      \item $1 \le n \le \textcolor{red}{1000}$
+      \item $1 \le m \le 10^8$
+      \item $1 \le k_i \le 10^8$
+    \end{itemize}
+  \end{block}
+\end{frame}
+
+\end{document}
