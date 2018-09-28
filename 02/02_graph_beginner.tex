@@ -12,9 +12,6 @@
   pdftitle={グラフアルゴリズム 初級},
   pdfauthor={Jun Yoneyama}
 }
-\hypersetup{
-  colorlinks, linkcolor=blue, urlcolor=blue
-}
 \usefonttheme{professionalfonts}
 \AtBeginSection[]{}
 \renewcommand{\kanjifamilydefault}{\gtdefault}
@@ -26,5 +23,32 @@
 \begin{document}
 
 \frame{\maketitle}
+
+\section{グラフとは}
+
+\begin{frame}{\insertsection}
+  \begin{block}{グラフとは何か}
+    \begin{itemize}
+      \item 有向グラフ
+      \item 無向グラフ
+    \end{itemize}
+    の定義
+  \end{block}
+\end{frame}
+
+\subsection{有向グラフ}
+
+\begin{frame}{\insertsection: \insertsubsection}
+  \begin{definition}
+    以下を満たす $G = (V, E)$ を\emph{有向グラフ}という。
+    \begin{itemize}
+      \item $V$: 集合
+      \item $E \subseteq V \times V$
+    \end{itemize}
+    このとき、$V$の元を\emph{頂点}、$E$の元を\emph{辺}という。
+  \end{definition}
+  \pause
+  \alert{とりあえずこの定義を理解する必要はない}
+\end{frame}
 
 \end{document}
