@@ -1,0 +1,9 @@
+dots=$(glob *.dot)
+targ=$(replacesuffixes .dot, .pdf, $(dots))
+
+all: $(targ)
+
+$(targ): %.pdf: %.dot
+	dot -Tpdf $< -o$@
+
+.DEFAULT: all
