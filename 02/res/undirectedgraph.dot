@@ -1,0 +1,8 @@
+digraph G {
+  graph [rankdir = LR]
+  node [label = "", shape = circle];
+  edge [dir = none];
+  1 -> 2 -> 3 -> 1;
+  2 -> 4;
+  5 -> 6;
+}
