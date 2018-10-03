@@ -41,7 +41,7 @@
 \begin{frame}{\insertsection: \insertsubsection}
   \begin{block}{有向グラフ}
     \centering
-    \includegraphics{res/digraph.pdf}
+    \includegraphics[width=0.6\textwidth]{res/digraph-crp.pdf}
   \end{block}
 \end{frame}
 
@@ -61,7 +61,7 @@
 \begin{frame}{\insertsection: \insertsubsection}
   \begin{block}{無向グラフ}
     \centering
-    \includegraphics{res/undirectedgraph.pdf}
+    \includegraphics[width=0.6\textwidth]{res/undirectedgraph-crp.pdf}
   \end{block}
 \end{frame}
 
@@ -83,16 +83,50 @@
     \begin{itemize}
       \item ループ
       \item 多重辺
-      \item パス
       \item 閉路
       \item 連結成分
       \item 連結
       \item 木
-      \item 部分グラフ
       \item $\vdots$
     \end{itemize}
     本講座では、出てきたときに解説する
   \end{block}
+\end{frame}
+
+\section{グラフの表現}
+
+\begin{frame}{\insertsection}
+  グラフをプログラム内で表現するときのデータ構造
+  \begin{block}{例}
+    \centering
+    \includegraphics[width=0.4\textwidth]{res/triangle-crp.pdf}
+  \end{block}
+  \begin{columns}[t]
+    \begin{column}{0.48\textwidth}
+      \begin{block}{隣接行列}
+        \begin{table}
+          \begin{tabular}{c|ccc}
+            i \ \textbackslash \ j & 0 & 1 & 2 \\ \hline
+            0 & false & true & true \\
+            1 & false & false & true \\
+            2 & false & false & false
+          \end{tabular}
+        \end{table}
+      \end{block}
+    \end{column}
+    \begin{column}{0.48\textwidth}
+      \begin{block}{隣接リスト}
+        \begin{table}
+          \begin{tabular}{r|l}
+            i & 隣接頂点 \\ \hline
+            0 & [1, 2] \\
+            1 & [2] \\
+            2 & []
+          \end{tabular}
+        \end{table}
+      \end{block}
+    \end{column}
+  \end{columns}
 \end{frame}
 
 \end{document}
