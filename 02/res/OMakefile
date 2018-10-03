@@ -1,9 +1,12 @@
 dots=$(glob *.dot)
-targ=$(replacesuffixes .dot, .pdf, $(dots))
+targ=$(replacesuffixes .dot, -crp.pdf, $(dots))
 
 all: $(targ)
 
 $(targ): %.pdf: %.dot
 	dot -Tpdf $< -o$@
+
+%-crp.pdf: %.pdf
+	pdfcrop $< $@
 
 .DEFAULT: all
