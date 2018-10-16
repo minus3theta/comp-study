@@ -3,7 +3,7 @@ targ=$(replacesuffixes .dot, -crp.pdf, $(dots))
 
 all: $(targ)
 
-$(targ): %.pdf: %.dot
+%.pdf: %.dot
 	dot -Tpdf $< -o$@
 
 %-crp.pdf: %.pdf
